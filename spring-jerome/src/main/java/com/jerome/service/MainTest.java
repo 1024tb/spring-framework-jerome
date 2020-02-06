@@ -12,5 +12,6 @@ public class MainTest {
 		AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(ApplicationBoot.class);
 		Person person = (Person) ctx.getBean("person");
 		System.out.println(person.toString());
+		ctx.close();
 	}
 }
