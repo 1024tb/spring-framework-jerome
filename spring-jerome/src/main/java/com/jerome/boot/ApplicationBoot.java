@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * @author liusj
+ * 加了@Configuration后的配置类会由cglib动态代理
  */
 
 @Configuration
