@@ -206,12 +206,15 @@ public abstract class AnnotationConfigUtils {
 			beanDefs.add(registerPostProcessor(registry, def, PERSISTENCE_ANNOTATION_PROCESSOR_BEAN_NAME));
 		}
 		// 注册EventListenerMethodProcessor
+//		这是对@EventListener注解的处理，spring实现事件监听的方式有很多种，其中一种就是在方法上添加@EventListener注解
+//		关于@EventListener(https://blog.csdn.net/yu_kang/article/details/88389700#EventListener_263)
 		if (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(EventListenerMethodProcessor.class);
 			def.setSource(source);
 			beanDefs.add(registerPostProcessor(registry, def, EVENT_LISTENER_PROCESSOR_BEAN_NAME));
 		}
 		// 注册DefaultEventListenerFactory
+//		EventListenerMethodProcessor中会调用DefaultEventListenerFactory的方法，注册的具体实现是由DefaultEventListenerFactory处理
 		if (!registry.containsBeanDefinition(EVENT_LISTENER_FACTORY_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(DefaultEventListenerFactory.class);
 			def.setSource(source);
@@ -225,6 +228,9 @@ public abstract class AnnotationConfigUtils {
 			BeanDefinitionRegistry registry, RootBeanDefinition definition, String beanName) {
 
 		definition.setRole(BeanDefinition.ROLE_INFRASTRUCTURE);
+		//registry就是AnnotationApplicationContext
+		//这里是调用父类GenericApplicationContext中的registerBeanDefinition方法
+		//调用beanFactory将spring默认的BeanDefinition注册进去
 		registry.registerBeanDefinition(beanName, definition);
 		return new BeanDefinitionHolder(definition, beanName);
 	}
@@ -246,6 +252,12 @@ public abstract class AnnotationConfigUtils {
 		processCommonDefinitionAnnotations(abd, abd.getMetadata());
 	}
 
+	/**
+	 * 注册beanDefinition的时候会先处理类当中的通用注解，分析源码可以知道他主要处理Lazy、DependOn、 Primary 、Role等注解，
+	 * 然后将注解的信息添加到数据结构BeanDefinition中去，BeanDefinition就是描述bean注册的信息
+	 * @param abd AnnotatedBeanDefinition
+	 * @param metadata AnnotatedTypeMetadata
+	 */
 	static void processCommonDefinitionAnnotations(AnnotatedBeanDefinition abd, AnnotatedTypeMetadata metadata) {
 		AnnotationAttributes lazy = attributesFor(metadata, Lazy.class);
 		if (lazy != null) {

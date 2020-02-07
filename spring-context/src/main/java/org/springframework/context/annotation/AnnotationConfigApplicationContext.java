@@ -170,9 +170,15 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	 * @see #scan(String...)
 	 * @see #refresh()
 	 */
+	/**
+	 * 注册一个或多个bean给容器,比如有新加的类可以调用这个方法,但是注册之后需要手动调用refresh方法
+	 */
 	@Override
 	public void register(Class<?>... componentClasses) {
 		Assert.notEmpty(componentClasses, "At least one component class must be specified");
+		//此处注册的reader就是默认构造函数初始化的AnnotatedBeanDefinitionReader
+//		beanDefinitionMap除了jpa的那个bean(beanName为org.springframework.context.annotation.internalPersistenceAnnotationProcessor)没有之外，
+//		其余的6个内部bean都注册进DefaultListableBeanFactory中去了
 		this.reader.register(componentClasses);
 	}
 
