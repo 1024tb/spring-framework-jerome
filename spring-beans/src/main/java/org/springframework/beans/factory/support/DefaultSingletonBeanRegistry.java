@@ -71,18 +71,22 @@ import org.springframework.util.StringUtils;
 public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements SingletonBeanRegistry {
 
 	/** Cache of singleton objects: bean name to bean instance. */
+	/** 一级缓存 就是单例缓存池 用于我们所有的单例bean */
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
 	/** Cache of singleton factories: bean name to ObjectFactory. */
+	/** 三级缓存 该map用户缓存 key为beanName value为ObjectFactory(包装为早期对象) */
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
 
 	/** Cache of early singleton objects: bean name to bean instance. */
+	/** 二级缓存 用户缓存我们的key为beanName value是我们的早期对象(对象属性还没来得及进行赋值) */
 	private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
 
 	/** Set of registered singletons, containing the bean names in registration order. */
 	private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
 
 	/** Names of beans that are currently in creation. */
+	/** 该集合用户缓存当前正在创建的bean的名称 */
 	private final Set<String> singletonsCurrentlyInCreation =
 			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
@@ -161,6 +165,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	@Override
 	@Nullable
 	public Object getSingleton(String beanName) {
+		//在这里，系统一般是允许早期对象引用的allowEarlyReference通过这个参数可以控制解决循环依赖
 		return getSingleton(beanName, true);
 	}
 
@@ -174,15 +179,30 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+    //  第一步：我们尝试去一级缓存(单例缓存池中获取对象，一般情况从该map中获取的对象是直接可以使用的)
+    //  IOC容器初始化加载单例bean的时候，第一次进来的时候，该map中一般返回空
 		Object singletonObject = this.singletonObjects.get(beanName);
+		//  若在第一级缓存中没有获取到对象，并且singletonsCurrentlyInCreation这个list包含该beanName
+		//  Ioc容器初始化加载单例bean的时候，第一次进来的时候，该list中一般返回空，但是循环依赖的时候可以满足该条件
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			synchronized (this.singletonObjects) {
+				// 尝试去二级缓存中获取对象(二级缓存中的对象是一个早期对象)
+				// 何为早期对象：就是bean刚刚调用了构造方法，还来不及给bean的属性进行赋值的对象，就是早期对象
 				singletonObject = this.earlySingletonObjects.get(beanName);
+				// 二级缓存中也没有获取到对象，allowEarlyReference为true(参数是有上一个方法传递进来的true)
 				if (singletonObject == null && allowEarlyReference) {
+					// 直接从三级缓存中取ObjectFactory对象，这个对接就是用来解决循环依赖的关键所在
+					// 在ioc后期的过程中，当bean调用了构造方法的时候，把早期对象包裹成一个ObjectFactory
+					// 暴露的三级缓存中
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+					//从三级缓存中获取到的对象不为空
 					if (singletonFactory != null) {
+						// 在这里通过暴露的ObjectFactory包装对象中，通过调用他的getObject()来获取我们的早期对象
+						// 在这个环节中会调用到getEarlyBeanReference()来进行后置处理
 						singletonObject = singletonFactory.getObject();
+						// 把早期对象放置在二级缓存
 						this.earlySingletonObjects.put(beanName, singletonObject);
+						// ObjectFactory包装对象从三级缓存中删除掉
 						this.singletonFactories.remove(beanName);
 					}
 				}
