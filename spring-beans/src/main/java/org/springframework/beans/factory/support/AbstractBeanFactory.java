@@ -248,7 +248,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
-//		尝试去缓存中获取对象
+        // 尝试去缓存中获取对象
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
@@ -265,9 +265,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		else {
-			//spring只能解决单例对象的setter，注入的循环依赖，不能解决构造器注入
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
+			// spring只能解决单例对象的setter，注入的循环依赖，不能解决构造器注入
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
@@ -310,15 +310,21 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				// 依赖bean的名称
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
+					// 1.若给定的依赖bean已经注册为依赖给定的bean
+					// 即循环依赖的情况，抛出BeanCreationException
 					for (String dep : dependsOn) {
+						// beanName是当前正在创建的bean，dep是正在创建的bean的依赖的bean的名称
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+						// 保存的是依赖beanName之间的映射关系：依赖beanName -> beanName的集合
 						registerDependentBean(dep, beanName);
 						try {
+							// 获取dependsOn的bean
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
@@ -329,15 +335,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
+				// 创建单例bean
 				if (mbd.isSingleton()) {
+					// 把beanName和一个singletonFactory传入一个回调对象，用于回调
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
+							//进入创建bean逻辑
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
 							// Explicitly remove instance from singleton cache: It might have been put there
 							// eagerly by the creation process, to allow for circular reference resolution.
 							// Also remove any beans that received a temporary reference to the bean.
+							// 创建bean的过程中发生异常，需要销毁关于当前bean的所有信息
 							destroySingleton(beanName);
 							throw ex;
 						}

@@ -524,44 +524,45 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
-			// 准备bean工厂以在此上下文中使用。
+			// 准备bean工厂以在此上下文中使用，对bean工厂进行填充属性。
 			prepareBeanFactory(beanFactory);
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
-				// 允许在上下文子类中对bean工厂进行后处理。
+				// 允许在上下文子类中对bean工厂进行后处理。(留给子类去实现该接口)
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
-				// 在上下文中调用注册为bean的工厂处理器。
+				// 在上下文中调用注册为bean的工厂处理器。(调用bean工厂的后置处理器)
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
-				// 注册拦截bean创建的bean处理器。
+				// 注册拦截bean创建的bean处理器。(调用bean的后置处理器)
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
-				// 初始化此上下文的消息源。
+				// 初始化国际化资源处理器
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
-				// 初始化此上下文的消息源。
+				// 初始化此上下文的消息源。(创建事件多播器)
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
 				// 在特定上下文子类中初始化其他特殊bean。
+				// 留给子类实现，springboot也是从这个方法启动tomcat的
 				onRefresh();
 
 				// Check for listener beans and register them.
-				// 检查监听器bean并注册它们。
+				// 检查监听器bean并注册到多播器上。
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
-				// 实例化所有剩余（非延迟初始化）单例。
+				// 实例化所有剩余（非延迟初始化）单例bean。
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
-				// 最后一步：发布相应的事件。
+				// 最后一步：发布相应的事件。(spring cloud从这个启动)
 				finishRefresh();
 			}
 
@@ -638,7 +639,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/**
 	 * <p>Replace any stub property sources with actual instances.
 	 * @see org.springframework.core.env.PropertySource.StubPropertySource
-	 * @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
+//	 * @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
 	 */
 	protected void initPropertySources() {
 		// For subclasses: do nothing by default.
